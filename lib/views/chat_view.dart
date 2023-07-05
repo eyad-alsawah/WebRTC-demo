@@ -26,11 +26,14 @@ class _ChatViewState extends State<ChatView> {
   @override
   void initState() {
     super.initState();
+
+
     localRendererCubit = LocalRendererCubit()..initRenderer();
 
     peerConnectionCubit =
-        PeerConnectionCubit(onRemoteStreamSet: (remoteStream) async {
+        PeerConnectionCubit(onAddRemoteStream: (remoteStream) async {
       remoteRendererCubit.initRenderer(remoteStream: remoteStream);
+
     });
   }
 
@@ -123,7 +126,11 @@ class _ChatViewState extends State<ChatView> {
                   }
                   if (state is RemoteRendererDone) {
                     return RTCVideoView(
-
+                      placeholderBuilder: (context) {
+                        return Container(
+                          color: Colors.green,
+                        );
+                      },
                       state.remoteRenderer,
                       objectFit:
                           RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,

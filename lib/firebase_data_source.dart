@@ -17,12 +17,12 @@ class FirebaseDataSource {
 
 
   /// --------------------------------------------Rooms Management-------------------------------
-  Future<String> createRoom({required RTCSessionDescription offer}) async {
-    final roomRef = _db.collection(_roomsCollection).doc();
+  Future<void> createRoom({required RTCSessionDescription offer, required String roomId}) async {
+    final roomRef = _db.collection(_roomsCollection).doc(roomId);
     final roomWithOffer = <String, dynamic>{'offer': offer.toMap()};
 
     await roomRef.set(roomWithOffer);
-    return roomRef.id;
+
   }
 
   Future<void> deleteRoom({required String roomId})async{
