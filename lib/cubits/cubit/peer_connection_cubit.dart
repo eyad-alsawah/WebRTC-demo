@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:logger/logger.dart';
 import 'package:meta/meta.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_rtc/firebase_data_source.dart';
 import 'package:flutter_webrtc/src/native/media_stream_impl.dart';
 
@@ -60,7 +61,7 @@ class PeerConnectionCubit extends Cubit<PeerConnectionState> {
   }
 
   Future<void> createRoom({required MediaStream localStream}) async {
-    String testRoomID = 'TestRoomId';
+    String testRoomID = const Uuid().v1().toString();
     String createdRoomId = testRoomID;
     roomId = createdRoomId;
     //----------
