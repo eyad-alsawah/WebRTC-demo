@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-
+import 'package:toast/toast.dart';
 import 'package:web_rtc/cubits/cubit/peer_connection_cubit.dart';
 import 'package:web_rtc/firebase_data_source.dart';
 import 'package:web_rtc/init_remote_renderers_cubit/remote_renderer_cubit.dart';
@@ -34,12 +34,17 @@ class _ChatViewState extends State<ChatView> {
         PeerConnectionCubit(onAddRemoteStream: (remoteStream) async {
       remoteRendererCubit.initRenderer(remoteStream: remoteStream);
 
-    });
+    },onConnectionDisconnected: (){
+          Navigator.of(context).pop();
+        });
   }
 
+
   @override
-  void dispose() {
-    super.dispose();
+  void deactivate() {
+    super.deactivate();
+
+    peerConnectionCubit.dispose();
     localRendererCubit.dispose();
     remoteRendererCubit.dispose();
     // delete the room in case it was created (roomId == null)
@@ -50,6 +55,7 @@ class _ChatViewState extends State<ChatView> {
 
   @override
   Widget build(BuildContext context) {
+    ToastContext().init(context);
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,

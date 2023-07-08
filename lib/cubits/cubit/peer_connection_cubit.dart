@@ -1,5 +1,8 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:logger/logger.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
@@ -9,7 +12,7 @@ import 'package:flutter_webrtc/src/native/media_stream_impl.dart';
 part 'peer_connection_state.dart';
 
 class PeerConnectionCubit extends Cubit<PeerConnectionState> {
-  PeerConnectionCubit({required this.onAddRemoteStream})
+  PeerConnectionCubit({required this.onAddRemoteStream,required this.onConnectionDisconnected})
       : super(PeerConnectionInitial());
   FirebaseDataSource firebaseDataSource = FirebaseDataSource();
   var logger = Logger(
@@ -18,9 +21,10 @@ class PeerConnectionCubit extends Cubit<PeerConnectionState> {
   late RTCPeerConnection peerConnection;
   late RTCSessionDescription sdpOffer;
   late String roomId;
-  MediaStream? remoteStream;
+  MediaStream? remoteMediaStream;
+  MediaStream? localMediaStream;
   Future<void> Function(MediaStream remoteStream) onAddRemoteStream;
-
+  void Function()  onConnectionDisconnected;
   static const Map<String, dynamic> _configuration = {
     'iceServers': [
       {
@@ -37,6 +41,7 @@ class PeerConnectionCubit extends Cubit<PeerConnectionState> {
     required MediaStream localStream,
   }) async {
     roomId = joinedRoomId;
+    localMediaStream = localStream;
     //----------------------------------
     await _createPeerConnection();
     _registerPeerConnectionStateListeners();
@@ -140,8 +145,8 @@ class PeerConnectionCubit extends Cubit<PeerConnectionState> {
 
     peerConnection.onAddStream = (stream) {
       logger.e('on add stream was called');
-      remoteStream = stream;
-      onAddRemoteStream(remoteStream!);
+      remoteMediaStream = stream;
+      onAddRemoteStream(remoteMediaStream!);
 
       print("remote stream was added");
 
@@ -155,10 +160,10 @@ class PeerConnectionCubit extends Cubit<PeerConnectionState> {
       logger.i('received an onTrack event');
       event.streams[0].getTracks().forEach((track) {
         logger.d('adding remote track to remote Stream');
-        remoteStream?.addTrack(track);
+        remoteMediaStream?.addTrack(track);
         logger.i('remote tracks were added to remote stream');
       });
-      onAddRemoteStream(remoteStream!);
+      remoteMediaStream!= null?    onAddRemoteStream(remoteMediaStream!):null;
     };
   }
 
@@ -178,22 +183,81 @@ class PeerConnectionCubit extends Cubit<PeerConnectionState> {
   void _registerPeerConnectionStateListeners() {
     peerConnection.onSignalingState = (state) {
       logger.w('signaling state: $state');
+      Fluttertoast.showToast(
+        msg: '$state',
+        toastLength: Toast.LENGTH_LONG,
+        fontSize: 10.0,
+        backgroundColor: Colors.orangeAccent,
+        textColor: Colors.black,
+      );
     };
 
     peerConnection.onConnectionState = (state) {
       logger.w('connection state: $state');
+      Fluttertoast.showToast(
+        msg: '$state',
+        toastLength: Toast.LENGTH_LONG,
+        fontSize: 10,
+        backgroundColor: Colors.orangeAccent,
+        textColor: Colors.black,
+      );
     };
 
     peerConnection.onIceConnectionState = (state) {
       logger.w('ice connection state: $state');
+      Fluttertoast.showToast(
+        msg: '$state',
+        toastLength: Toast.LENGTH_LONG,
+        fontSize: 10,
+        backgroundColor: Colors.orangeAccent,
+        textColor: Colors.black,
+      );
+      //----------------
+      if(state == RTCIceConnectionState.RTCIceConnectionStateDisconnected){
+        onConnectionDisconnected();
+      }
     };
 
     peerConnection.onIceGatheringState = (state) {
       logger.w('ice gathering state: $state');
+      Fluttertoast.showToast(
+        msg: '$state',
+        toastLength: Toast.LENGTH_LONG,
+        fontSize: 10,
+        backgroundColor: Colors.orangeAccent,
+        textColor: Colors.black,
+      );
+      //-----------------
+
     };
 
     peerConnection.onRemoveStream = (stream) {
       logger.w('stream with id: ${stream.id} was remove');
+      Fluttertoast.showToast(
+        msg: '$state',
+        toastLength: Toast.LENGTH_LONG,
+        fontSize: 10,
+        backgroundColor: Colors.orangeAccent,
+        textColor: Colors.black,
+      );
     };
   }
+
+
+
+  //-------------------------
+
+void dispose(){
+  remoteMediaStream!=null? peerConnection.removeStream(remoteMediaStream!):null;
+  localMediaStream?.getTracks().forEach((track) {
+    track.stop();
+  });
+  localMediaStream?.getAudioTracks().forEach((track) {
+    track.stop();
+  });
+  localMediaStream?.getVideoTracks().forEach((track) {
+    track.stop();
+  });
+  peerConnection.dispose();
+}
 }
